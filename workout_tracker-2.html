@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Your Workout Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0d0f;
+    --surface: #161618;
+    --surface2: #1e1e21;
+    --border: #2a2a2e;
+    --push: #e63946;
+    --pull: #3a86ff;
+    --legs: #2dc653;
+    --cardio: #9b5de5;
+    --text: #f0f0f0;
+    --muted: #888;
+    --done: #2dc653;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .header-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, #e63946, #3a86ff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .header-date {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: right;
+  }
+  .header-date strong { color: var(--text); display: block; font-size: 15px; }
+
+  /* WEEK BANNER */
+  .week-banner {
+    margin: 16px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .week-info { }
+  .week-label {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 1px;
+    color: var(--text);
+  }
+  .week-phase {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+  .week-progress {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .progress-dot {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    border: 2px solid var(--border);
+    color: var(--muted);
+    transition: all 0.3s;
+  }
+  .progress-dot.push { border-color: var(--push); color: var(--push); }
+  .progress-dot.pull { border-color: var(--pull); color: var(--pull); }
+  .progress-dot.legs { border-color: var(--legs); color: var(--legs); }
+  .progress-dot.done { background: var(--done); border-color: var(--done); color: #000; }
+
+  .week-nav-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .week-nav-btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .week-nav-btn:disabled { opacity: 0.25; cursor: not-allowed; }
+  .week-nav-btn:not(:disabled):active { transform: scale(0.9); }
+  .week-viewing-note {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--cardio);
+    margin-top: 6px;
+  }
+  .week-viewing-note button {
+    background: none;
+    border: none;
+    color: var(--cardio);
+    text-decoration: underline;
+    font-size: 11px;
+    cursor: pointer;
+    padding: 0;
+    font-weight: 600;
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin: 0 16px 16px;
+    background: var(--surface);
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .tab {
+    flex: 1;
+    padding: 10px 4px;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    cursor: pointer;
+    background: none;
+    border: none;
+    color: var(--muted);
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  .tab.active-push { background: var(--push); color: #fff; }
+  .tab.active-pull { background: var(--pull); color: #fff; }
+  .tab.active-legs { background: var(--legs); color: #000; }
+  .tab.active-history { background: var(--surface2); color: var(--text); }
+
+  /* WORKOUT PANEL */
+  .panel { display: none; padding: 0 16px 80px; }
+  .panel.active { display: block; }
+
+  /* TODAY BADGE */
+  .today-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 14px;
+  }
+  .today-badge.push { background: rgba(230,57,70,0.15); color: var(--push); border: 1px solid var(--push); }
+  .today-badge.pull { background: rgba(58,134,255,0.15); color: var(--pull); border: 1px solid var(--pull); }
+  .today-badge.legs { background: rgba(45,198,83,0.15); color: var(--legs); border: 1px solid var(--legs); }
+
+  /* CARDIO REMINDER */
+  .cardio-card {
+    background: linear-gradient(135deg, rgba(155,93,229,0.15), rgba(155,93,229,0.05));
+    border: 1px solid rgba(155,93,229,0.4);
+    border-radius: 12px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+  }
+  .cardio-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
+    letter-spacing: 1px;
+    color: var(--cardio);
+    margin-bottom: 6px;
+  }
+  .cardio-text { font-size: 13px; color: #ccc; line-height: 1.5; }
+
+  /* EXERCISE CARD */
+  .exercise-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+    transition: border-color 0.3s;
+  }
+  .exercise-card.completed { border-color: var(--done); }
+  .exercise-header {
+    display: flex;
+    align-items: center;
+    padding: 14px 16px;
+    gap: 12px;
+    cursor: pointer;
+  }
+  .ex-check {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 14px;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .exercise-card.completed .ex-check {
+    background: var(--done);
+    border-color: var(--done);
+    color: #000;
+  }
+  .ex-info { flex: 1; }
+  .ex-name { font-size: 15px; font-weight: 700; }
+  .ex-sets { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .ex-expand { color: var(--muted); font-size: 18px; transition: transform 0.2s; }
+  .exercise-card.open .ex-expand { transform: rotate(180deg); }
+
+  /* EXERCISE DETAIL */
+  .exercise-detail {
+    display: none;
+    border-top: 1px solid var(--border);
+  }
+  .exercise-card.open .exercise-detail { display: block; }
+
+  .ex-image {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    background: var(--surface2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 13px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ex-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .ex-image-placeholder {
+    width: 100%;
+    height: 200px;
+    background: var(--surface2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    color: var(--muted);
+  }
+  .ex-image-placeholder .icon { font-size: 36px; }
+  .ex-image-placeholder span { font-size: 12px; }
+
+  .ex-body { padding: 14px 16px; }
+  .ex-tip {
+    font-size: 13px;
+    color: #ccc;
+    line-height: 1.6;
+    margin-bottom: 12px;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border-left: 3px solid var(--border);
+  }
+  .video-links { display: flex; gap: 8px; flex-wrap: wrap; }
+  .video-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+  .video-btn:hover { opacity: 0.8; }
+  .yt-btn { background: #ff0000; color: #fff; }
+  .mark-done-btn {
+    width: 100%;
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 10px;
+    border: none;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+  }
+  .mark-done-btn.push-btn { background: var(--push); color: #fff; }
+  .mark-done-btn.pull-btn { background: var(--pull); color: #fff; }
+  .mark-done-btn.legs-btn { background: var(--legs); color: #000; }
+  .mark-done-btn.undone-btn { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+
+  /* COMPLETE WORKOUT BUTTON */
+  .complete-btn {
+    width: 100%;
+    padding: 16px;
+    border-radius: 12px;
+    border: none;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    margin-top: 8px;
+    transition: all 0.2s;
+  }
+  .complete-btn.push-complete { background: var(--push); color: #fff; }
+  .complete-btn.pull-complete { background: var(--pull); color: #fff; }
+  .complete-btn.legs-complete { background: var(--legs); color: #000; }
+  .complete-btn:disabled { background: var(--surface2); color: var(--muted); cursor: default; }
+
+  /* DONE OVERLAY */
+  .done-overlay {
+    display: none;
+    padding: 24px;
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--done);
+    border-radius: 12px;
+    margin-bottom: 16px;
+  }
+  .done-overlay.show { display: block; }
+  .done-emoji { font-size: 48px; }
+  .done-text { font-family: 'Bebas Neue', sans-serif; font-size: 26px; color: var(--done); margin: 8px 0 4px; letter-spacing: 2px; }
+  .done-sub { font-size: 13px; color: var(--muted); }
+  .undo-btn { margin-top: 12px; background: none; border: 1px solid var(--border); color: var(--muted); padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 12px; }
+
+  /* HISTORY */
+  .history-week {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .history-week-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .history-week-title { font-weight: 700; font-size: 15px; }
+  .history-week-dates { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .history-dots { display: flex; gap: 6px; }
+  .h-dot {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--border);
+    color: var(--muted);
+  }
+  .h-dot.done-push { background: var(--push); border-color: var(--push); color: #fff; }
+  .h-dot.done-pull { background: var(--pull); border-color: var(--pull); color: #fff; }
+  .h-dot.done-legs { background: var(--legs); border-color: var(--legs); color: #000; }
+
+  /* PHASE NOTICE */
+  .phase-notice {
+    padding: 12px 16px;
+    background: rgba(155,93,229,0.1);
+    border: 1px solid rgba(155,93,229,0.3);
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    color: #ccc;
+  }
+  .phase-notice strong { color: var(--cardio); }
+
+  /* NOTIFICATION BANNER */
+  .notif-banner {
+    margin: 0 16px 16px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(155,93,229,0.2), rgba(58,134,255,0.1));
+    border: 1px solid rgba(155,93,229,0.5);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .notif-banner.hidden { display: none; }
+  .notif-text { font-size: 13px; color: #ccc; line-height: 1.4; }
+  .notif-text strong { color: var(--cardio); }
+  .notif-btn {
+    flex-shrink: 0;
+    padding: 8px 16px;
+    background: var(--cardio);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .notif-status {
+    margin: 0 16px 12px;
+    font-size: 12px;
+    color: var(--muted);
+    text-align: center;
+    display: none;
+  }
+
+  .tab.active-settings { background: var(--surface2); color: var(--text); }
+
+  /* SETTINGS */
+  .settings-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 16px;
+    margin-bottom: 14px;
+  }
+  .settings-title {
+    font-weight: 700;
+    font-size: 16px;
+    margin-bottom: 6px;
+  }
+  .settings-desc {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+  .settings-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 15px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    margin-bottom: 8px;
+  }
+  .settings-input:focus { border-color: var(--cardio); }
+  .settings-confirm {
+    font-size: 12px;
+    color: var(--done);
+    min-height: 18px;
+  }
+  .settings-notif-btn {
+    margin-top: 10px;
+    width: 100%;
+    padding: 12px;
+    background: var(--cardio);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .settings-notif-btn:hover { opacity: 0.85; }
+  .settings-notif-status {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--muted);
+    min-height: 18px;
+  }
+  .confetti-container {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 999;
+  }
+  .confetti-piece {
+    position: absolute;
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    animation: confetti-fall 2.5s ease-in forwards;
+  }
+  @keyframes confetti-fall {
+    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">GRIND TRACKER</div>
+  <div class="header-date" id="headerDate"></div>
+</div>
+
+<div class="week-banner">
+  <div class="week-info">
+    <div class="week-nav-row">
+      <button class="week-nav-btn" id="weekNavBack" onclick="navigateWeek(-1)" aria-label="Previous week">‹</button>
+      <div class="week-label" id="weekLabel">Week 1</div>
+      <button class="week-nav-btn" id="weekNavForward" onclick="navigateWeek(1)" aria-label="Next week">›</button>
+    </div>
+    <div class="week-phase" id="weekPhase">Cardio: 1 min jog → 2 min walk × 6</div>
+    <div class="week-viewing-note" id="weekViewingNote"></div>
+  </div>
+  <div class="week-progress">
+    <div class="progress-dot push" id="dot-push" title="Push">P</div>
+    <div class="progress-dot pull" id="dot-pull" title="Pull">PL</div>
+    <div class="progress-dot legs" id="dot-legs" title="Legs">L</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab" id="tab-push" onclick="switchTab('push')">🔴 Push</button>
+  <button class="tab" id="tab-pull" onclick="switchTab('pull')">🔵 Pull</button>
+  <button class="tab" id="tab-legs" onclick="switchTab('legs')">🟢 Legs</button>
+  <button class="tab" id="tab-history" onclick="switchTab('history')">📅 History</button>
+  <button class="tab" id="tab-settings" onclick="switchTab('settings')">⚙️ Settings</button>
+</div>
+
+<!-- NOTIFICATION BANNER -->
+<div class="notif-banner" id="notifBanner">
+  <div class="notif-text"><strong>🔔 Get workout reminders?</strong><br>We'll nudge you at 10am on days you haven't logged yet.</div>
+  <button class="notif-btn" onclick="requestNotifications()">Turn On</button>
+</div>
+<div class="notif-status" id="notifStatus"></div>
+
+<!-- PUSH PANEL -->
+<div class="panel" id="panel-push">
+  <div class="today-badge push">🔴 DAY 1 — PUSH · Chest, Shoulders, Triceps</div>
+
+  <div class="done-overlay" id="done-push">
+    <div class="done-emoji">💪</div>
+    <div class="done-text">PUSH DAY DONE!</div>
+    <div class="done-sub" id="done-push-date"></div>
+    <button class="undo-btn" onclick="undoWorkout('push')">Undo</button>
+  </div>
+
+  <div id="push-content">
+    <div id="push-exercises"></div>
+    <button class="complete-btn push-complete" id="complete-push" onclick="completeWorkout('push')">MARK PUSH DAY COMPLETE</button>
+  </div>
+</div>
+
+<!-- PULL PANEL -->
+<div class="panel" id="panel-pull">
+  <div class="today-badge pull">🔵 DAY 2 — PULL · Back, Biceps (Priority!)</div>
+  <div class="phase-notice">⚠️ <strong>Your back is weak — this is your most important day.</strong> Don't skip this one.</div>
+
+  <div class="done-overlay" id="done-pull">
+    <div class="done-emoji">🏋️</div>
+    <div class="done-text">PULL DAY DONE!</div>
+    <div class="done-sub" id="done-pull-date"></div>
+    <button class="undo-btn" onclick="undoWorkout('pull')">Undo</button>
+  </div>
+
+  <div id="pull-content">
+    <div id="pull-exercises"></div>
+    <button class="complete-btn pull-complete" id="complete-pull" onclick="completeWorkout('pull')">MARK PULL DAY COMPLETE</button>
+  </div>
+</div>
+
+<!-- LEGS PANEL -->
+<div class="panel" id="panel-legs">
+  <div class="today-badge legs">🟢 DAY 3 — LEGS · Explosiveness + Bounce</div>
+
+  <div class="done-overlay" id="done-legs">
+    <div class="done-emoji">🦵</div>
+    <div class="done-text">LEGS DAY DONE!</div>
+    <div class="done-sub" id="done-legs-date"></div>
+    <button class="undo-btn" onclick="undoWorkout('legs')">Undo</button>
+  </div>
+
+  <div id="legs-content">
+    <div id="legs-exercises"></div>
+    <button class="complete-btn legs-complete" id="complete-legs" onclick="completeWorkout('legs')">MARK LEGS DAY COMPLETE</button>
+  </div>
+</div>
+
+<!-- HISTORY PANEL -->
+<div class="panel" id="panel-history">
+  <div id="history-list"></div>
+</div>
+
+<!-- SETTINGS PANEL -->
+<div class="panel" id="panel-settings">
+  <div class="settings-section">
+    <div class="settings-title">📅 Start Date (Week 1)</div>
+    <div class="settings-desc">Pick the date your first week begins. Everything counts from here.</div>
+    <input type="date" class="settings-input" id="startDateInput" onchange="saveStartDate()">
+    <div class="settings-confirm" id="startDateConfirm"></div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-title">🔔 Reminder Time</div>
+    <div class="settings-desc">Pick what time you want your daily reminder. It'll only fire if you still have workouts left that week.</div>
+    <input type="time" class="settings-input" id="reminderTimeInput" onchange="saveReminderTime()">
+    <div class="settings-confirm" id="reminderTimeConfirm"></div>
+    <button class="settings-notif-btn" id="settingsNotifBtn" onclick="requestNotifications()">Enable Notifications</button>
+    <div class="settings-notif-status" id="settingsNotifStatus"></div>
+  </div>
+
+  <div class="settings-section">
+    <div class="settings-title">🧪 Test Notification</div>
+    <div class="settings-desc">Send a test right now to make sure it's working.</div>
+    <button class="settings-notif-btn" onclick="sendTestNotif()">Send Test Now</button>
+  </div>
+</div>
+
+<div class="confetti-container" id="confetti"></div>
+
+<script>
+// ===================== DATA =====================
+const EXERCISES = {
+  push: [
+    {
+      id: 'goblet', name: 'DB / Machine Chest Press', sets: '4 × 10',
+      tip: 'Control the weight on the way down — 2 seconds down, explode up. Keep your back flat against the bench or floor.',
+      image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&q=80',
+      ytQuery: 'dumbbell chest press form tutorial'
+    },
+    {
+      id: 'incline', name: 'Incline DB Press or Machine', sets: '3 × 10',
+      tip: 'Targets upper chest. Set the bench to 30-45 degrees. Don\'t let your elbows flare out too wide.',
+      image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=80',
+      ytQuery: 'incline dumbbell press form'
+    },
+    {
+      id: 'shoulder-press', name: 'Shoulder Press Machine', sets: '3 × 10',
+      tip: 'Sit tall, core tight. Press straight up — don\'t arch your lower back. Great for shoulder stability which helps your jump shot arc.',
+      image: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600&q=80',
+      ytQuery: 'machine shoulder press tutorial'
+    },
+    {
+      id: 'lateral', name: 'Cable Lateral Raises', sets: '3 × 12',
+      tip: 'Slow is the key here. Raise to shoulder height, hold 1 second, lower slowly. Don\'t swing.',
+      image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&q=80',
+      ytQuery: 'cable lateral raise form tutorial'
+    },
+    {
+      id: 'tricep', name: 'Tricep Pushdown (Cable)', sets: '3 × 12',
+      tip: 'Keep your elbows tucked to your sides the entire movement. Full extension at the bottom, squeeze.',
+      image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&q=80',
+      ytQuery: 'tricep pushdown cable form'
+    },
+    {
+      id: 'pushups', name: 'Push-ups (Bodyweight)', sets: '2 × max',
+      tip: 'Finisher — go until you can\'t. Straight body, chest to floor. Even 5 counts. These build up fast.',
+      image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80',
+      ytQuery: 'proper push up form beginner'
+    }
+  ],
+  pull: [
+    {
+      id: 'lat', name: 'Lat Pulldown (Machine)', sets: '4 × 10',
+      tip: 'Wide grip. Pull the bar to your upper chest, not your neck. Lean back slightly, squeeze your lats at the bottom.',
+      image: 'https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?w=600&q=80',
+      ytQuery: 'lat pulldown proper form wide grip'
+    },
+    {
+      id: 'cable-row', name: 'Seated Cable Row', sets: '4 × 10',
+      tip: 'Sit tall. Pull to your belly button, squeeze your shoulder blades together like you\'re cracking a walnut. This is your main back builder.',
+      image: 'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=600&q=80',
+      ytQuery: 'seated cable row form tutorial'
+    },
+    {
+      id: 'machine-row', name: 'Machine Row or DB Row', sets: '3 × 10/side',
+      tip: 'Pull with your elbow, not your hand. Think of your hand as a hook. Drive your elbow back past your body.',
+      image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=80',
+      ytQuery: 'dumbbell row one arm form'
+    },
+    {
+      id: 'face-pulls', name: 'Face Pulls (Cable)', sets: '3 × 15',
+      tip: 'Set cable at head height. Pull toward your face, elbows high. GREAT for fixing posture and protecting your shoulders. Do not skip this.',
+      image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&q=80',
+      ytQuery: 'face pulls cable form posture'
+    },
+    {
+      id: 'curls', name: 'Bicep Curl (DB or Cable)', sets: '3 × 12',
+      tip: 'Don\'t swing your body. Full range — all the way down, all the way up. Wrist stability from this helps your jump shot.',
+      image: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?w=600&q=80',
+      ytQuery: 'dumbbell bicep curl proper form'
+    },
+    {
+      id: 'pullups', name: 'Assisted Pull-up Machine', sets: '3 × 8',
+      tip: 'Use enough assistance to complete clean reps. Reduce the assist weight every 2-3 weeks. Best back exercise there is.',
+      image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&q=80',
+      ytQuery: 'assisted pull up machine how to use'
+    }
+  ],
+  legs: [
+    {
+      id: 'leg-press', name: 'Leg Press Machine', sets: '4 × 10',
+      tip: 'Full range of motion — lower until your knees are at 90 degrees. Feet shoulder-width. Don\'t lock your knees at the top.',
+      image: 'https://images.unsplash.com/photo-1517963879433-6ad2b056d712?w=600&q=80',
+      ytQuery: 'leg press machine form tutorial'
+    },
+    {
+      id: 'rdl', name: 'Romanian Deadlift (DB)', sets: '3 × 10',
+      tip: 'Hinge at the hips, push your butt back, feel the stretch in your hamstrings. These build the muscles that launch you off the floor.',
+      image: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600&q=80',
+      ytQuery: 'romanian deadlift dumbbell form'
+    },
+    {
+      id: 'leg-curl', name: 'Leg Curl Machine', sets: '3 × 12',
+      tip: 'Slow on the way back down. Your hamstrings power your jump — this is one of the most important exercises for your bounce.',
+      image: 'https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?w=600&q=80',
+      ytQuery: 'lying leg curl machine form'
+    },
+    {
+      id: 'goblet-squat', name: 'Goblet Squat (DB)', sets: '3 × 10',
+      tip: 'Hold DB at chest. Sit INTO the squat, chest up. Then explode up. The upward explosion is training your fast-twitch fibers for jumping.',
+      image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=600&q=80',
+      ytQuery: 'goblet squat dumbbell form tutorial'
+    },
+    {
+      id: 'jump-squats', name: 'Jump Squats (Bodyweight)', sets: '4 × 8',
+      tip: 'Squat to parallel, explode up as high as you can, land soft. Quality over speed. This is pure bounce training.',
+      image: 'https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?w=600&q=80',
+      ytQuery: 'jump squats form for vertical jump'
+    },
+    {
+      id: 'box-jumps', name: 'Box Jumps or Broad Jumps', sets: '3 × 6',
+      tip: 'Land soft — bend your knees on landing. The landing matters as much as the jump. Full reset between reps.',
+      image: 'https://images.unsplash.com/photo-1526506118085-60ce8714f8c5?w=600&q=80',
+      ytQuery: 'box jump form how to land safely'
+    },
+    {
+      id: 'calf-raises', name: 'Calf Raises (Machine or Standing)', sets: '3 × 15',
+      tip: 'Full range — all the way up on your toes, all the way down for a stretch. Your calves are the spring in your jump. Don\'t skip these.',
+      image: 'https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=600&q=80',
+      ytQuery: 'standing calf raise form vertical jump'
+    }
+  ]
+};
+
+// Cardio phases by week
+function getCardioPhase(weekNum) {
+  if (weekNum <= 3) return '🏃 Cardio: 1 min jog → 2 min walk × 6 rounds';
+  if (weekNum <= 6) return '🏃 Cardio: 2 min jog → 1 min walk × 6 rounds';
+  return '🏃 Cardio: Sustain 10–15 min jog straight!';
+}
+
+function getCardioDetail(weekNum) {
+  if (weekNum <= 3) return 'Walk 5 min to warm up, then alternate: 1 min jog / 2 min walk × 6 rounds. Finish with a 5 min walk. You\'ve got this.';
+  if (weekNum <= 6) return 'Walk 5 min to warm up, then: 2 min jog / 1 min walk × 6 rounds. Last 2 rounds, push the jog a little faster.';
+  return 'Walk 5 min to warm up, then jog continuously for 10–15 minutes without stopping. Huge milestone — you earned this progression.';
+}
+
+// ===================== STATE =====================
+function getStartDate() {
+  const saved = localStorage.getItem('startDate');
+  if (saved) return new Date(saved);
+  return new Date('2026-06-09');
+}
+
+function getReminderHour() {
+  const saved = localStorage.getItem('reminderTime');
+  if (saved) return parseInt(saved.split(':')[0]);
+  return 10;
+}
+
+function getReminderMinute() {
+  const saved = localStorage.getItem('reminderTime');
+  if (saved) return parseInt(saved.split(':')[1]);
+  return 0;
+}
+
+function getWeekNumber() {
+  const now = new Date();
+  const START_DATE = getStartDate();
+  const msPerWeek = 7 * 24 * 60 * 60 * 1000;
+  const diff = now - START_DATE;
+  if (diff < 0) return 1;
+  return Math.floor(diff / msPerWeek) + 1;
+}
+
+function getWeekKey(weekNum) {
+  return `week_${weekNum}`;
+}
+
+// The week currently being viewed/edited — separate from the real calendar week.
+// Lets the user navigate back to a missed week without it auto-advancing.
+let viewedWeek = null;
+
+function getViewedWeek() {
+  const real = getWeekNumber();
+  if (viewedWeek === null) viewedWeek = real;
+  if (viewedWeek > real) viewedWeek = real; // never allow viewing into the future
+  if (viewedWeek < 1) viewedWeek = 1;
+  return viewedWeek;
+}
+
+function navigateWeek(delta) {
+  const real = getWeekNumber();
+  let next = getViewedWeek() + delta;
+  if (next < 1) next = 1;
+  if (next > real) next = real;
+  viewedWeek = next;
+  refreshForViewedWeek();
+}
+
+function jumpToCurrentWeek() {
+  viewedWeek = getWeekNumber();
+  refreshForViewedWeek();
+}
+
+function refreshForViewedWeek() {
+  renderWeekBanner();
+  renderExercises('push');
+  renderExercises('pull');
+  renderExercises('legs');
+  renderDoneState();
+}
+
+function getStateForWeek(weekNum) {
+  const key = getWeekKey(weekNum);
+  const saved = localStorage.getItem(key);
+  if (saved) return JSON.parse(saved);
+  return { push: false, pull: false, legs: false, pushDate: null, pullDate: null, legsDate: null };
+}
+
+function getState() {
+  return getStateForWeek(getViewedWeek());
+}
+
+function saveState(state) {
+  const key = getWeekKey(getViewedWeek());
+  localStorage.setItem(key, JSON.stringify(state));
+}
+
+function getAllHistory() {
+  const weeks = [];
+  const weekNum = getWeekNumber();
+  for (let i = weekNum; i >= 1; i--) {
+    const key = getWeekKey(i);
+    const saved = localStorage.getItem(key);
+    if (saved) {
+      weeks.push({ week: i, ...JSON.parse(saved) });
+    } else if (i === weekNum) {
+      weeks.push({ week: i, push: false, pull: false, legs: false });
+    }
+  }
+  return weeks;
+}
+
+// ===================== UI =====================
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+function getWeekDates(weekNum) {
+  const start = new Date(getStartDate());
+  start.setDate(start.getDate() + (weekNum - 1) * 7);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 6);
+  const fmt = d => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  return `${fmt(start)} – ${fmt(end)}`;
+}
+
+function renderHeader() {
+  const now = new Date();
+  const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('headerDate').innerHTML = `
+    <strong>${days[now.getDay()]}, ${months[now.getMonth()]} ${now.getDate()}</strong>
+    ${now.getFullYear()}
+  `;
+}
+
+function renderWeekBanner() {
+  const weekNum = getViewedWeek();
+  const realWeek = getWeekNumber();
+  const state = getState();
+  document.getElementById('weekLabel').textContent = `Week ${weekNum}`;
+  document.getElementById('weekPhase').textContent = getCardioPhase(weekNum);
+
+  document.getElementById('weekNavBack').disabled = weekNum <= 1;
+  document.getElementById('weekNavForward').disabled = weekNum >= realWeek;
+
+  const note = document.getElementById('weekViewingNote');
+  if (weekNum !== realWeek) {
+    note.style.display = 'flex';
+    note.innerHTML = `📍 Viewing a past week <button onclick="jumpToCurrentWeek()">Jump to current (Week ${realWeek})</button>`;
+  } else {
+    note.style.display = 'none';
+    note.innerHTML = '';
+  }
+
+  const dotPush = document.getElementById('dot-push');
+  const dotPull = document.getElementById('dot-pull');
+  const dotLegs = document.getElementById('dot-legs');
+
+  dotPush.className = 'progress-dot push' + (state.push ? ' done' : '');
+  dotPull.className = 'progress-dot pull' + (state.pull ? ' done' : '');
+  dotLegs.className = 'progress-dot legs' + (state.legs ? ' done' : '');
+
+  dotPush.textContent = state.push ? '✓' : 'P';
+  dotPull.textContent = state.pull ? '✓' : 'PL';
+  dotLegs.textContent = state.legs ? '✓' : 'L';
+}
+
+function renderExercises(day) {
+  const container = document.getElementById(`${day}-exercises`);
+  const exercises = EXERCISES[day];
+  container.innerHTML = '';
+
+  // Cardio reminder at top
+  const weekNum = getViewedWeek();
+  const cardioDiv = document.createElement('div');
+  cardioDiv.className = 'cardio-card';
+  cardioDiv.innerHTML = `
+    <div class="cardio-title">🏃 OFF-DAY CARDIO REMINDER</div>
+    <div class="cardio-text">${getCardioDetail(weekNum)}<br><br>Also works with Ring Fit / jumping in place for warm-up.</div>
+  `;
+  container.appendChild(cardioDiv);
+
+  exercises.forEach((ex, i) => {
+    const card = document.createElement('div');
+    card.className = 'exercise-card';
+    card.id = `card-${day}-${i}`;
+
+    const ytUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(ex.ytQuery)}`;
+
+    card.innerHTML = `
+      <div class="exercise-header" onclick="toggleExercise('${day}', ${i})">
+        <div class="ex-check" id="check-${day}-${i}"></div>
+        <div class="ex-info">
+          <div class="ex-name">${ex.name}</div>
+          <div class="ex-sets">${ex.sets}</div>
+        </div>
+        <div class="ex-expand">▼</div>
+      </div>
+      <div class="exercise-detail">
+        <img src="${ex.image}" alt="${ex.name}" style="width:100%;height:200px;object-fit:cover;" onerror="this.style.display='none'">
+        <div class="ex-body">
+          <div class="ex-tip">💡 ${ex.tip}</div>
+          <div class="video-links">
+            <a href="${ytUrl}" target="_blank" class="video-btn yt-btn">▶ YouTube Tutorial</a>
+          </div>
+          <button class="mark-done-btn ${day}-btn undone-btn" id="done-btn-${day}-${i}" onclick="toggleExDone('${day}', ${i})">Mark as Done ✓</button>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+}
+
+function toggleExercise(day, i) {
+  const card = document.getElementById(`card-${day}-${i}`);
+  card.classList.toggle('open');
+}
+
+function toggleExDone(day, i) {
+  const card = document.getElementById(`card-${day}-${i}`);
+  const btn = document.getElementById(`done-btn-${day}-${i}`);
+  const check = document.getElementById(`check-${day}-${i}`);
+
+  const isDone = card.classList.contains('completed');
+  if (isDone) {
+    card.classList.remove('completed');
+    check.textContent = '';
+    btn.textContent = 'Mark as Done ✓';
+    btn.className = `mark-done-btn ${day}-btn undone-btn`;
+  } else {
+    card.classList.add('completed');
+    check.textContent = '✓';
+    btn.textContent = 'Done! ✓';
+    btn.className = `mark-done-btn undone-btn`;
+  }
+}
+
+function completeWorkout(day) {
+  const state = getState();
+  state[day] = true;
+  state[`${day}Date`] = new Date().toISOString();
+  saveState(state);
+
+  document.getElementById(`done-${day}`).classList.add('show');
+  document.getElementById(`done-${day}-date`).textContent = `Completed ${formatDate(state[`${day}Date`])}`;
+  document.getElementById(`${day}-content`).style.display = 'none';
+
+  renderWeekBanner();
+  spawnConfetti();
+
+  // Check if week complete
+  const newState = getState();
+  if (newState.push && newState.pull && newState.legs) {
+    setTimeout(() => alert('🔥 WEEK COMPLETE! Rest up and come back stronger next week.'), 800);
+  }
+}
+
+function undoWorkout(day) {
+  const state = getState();
+  state[day] = false;
+  state[`${day}Date`] = null;
+  saveState(state);
+
+  document.getElementById(`done-${day}`).classList.remove('show');
+  document.getElementById(`${day}-content`).style.display = 'block';
+  renderWeekBanner();
+}
+
+function renderDoneState() {
+  const state = getState();
+  ['push','pull','legs'].forEach(day => {
+    const overlay = document.getElementById(`done-${day}`);
+    const content = document.getElementById(`${day}-content`);
+    if (state[day]) {
+      overlay.classList.add('show');
+      document.getElementById(`done-${day}-date`).textContent = `Completed ${formatDate(state[`${day}Date`])}`;
+      content.style.display = 'none';
+    } else {
+      overlay.classList.remove('show');
+      content.style.display = 'block';
+    }
+  });
+}
+
+function renderHistory() {
+  const container = document.getElementById('history-list');
+  const history = getAllHistory();
+  container.innerHTML = '';
+
+  if (history.length === 0) {
+    container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px">No completed workouts yet.<br>Start Tuesday!</div>';
+    return;
+  }
+
+  history.forEach(w => {
+    const card = document.createElement('div');
+    card.className = 'history-week';
+    const total = (w.push ? 1 : 0) + (w.pull ? 1 : 0) + (w.legs ? 1 : 0);
+    card.innerHTML = `
+      <div class="history-week-header">
+        <div>
+          <div class="history-week-title">Week ${w.week} <span style="color:var(--muted);font-size:12px;font-weight:400">${total}/3 workouts</span></div>
+          <div class="history-week-dates">${getWeekDates(w.week)}</div>
+        </div>
+        <div class="history-dots">
+          <div class="h-dot ${w.push ? 'done-push' : ''}">P</div>
+          <div class="h-dot ${w.pull ? 'done-pull' : ''}">PL</div>
+          <div class="h-dot ${w.legs ? 'done-legs' : ''}">L</div>
+        </div>
+      </div>
+      ${w.pushDate || w.pullDate || w.legsDate ? `
+      <div style="padding:0 16px 14px;font-size:12px;color:var(--muted);line-height:1.8;">
+        ${w.pushDate ? `🔴 Push: ${formatDate(w.pushDate)}<br>` : ''}
+        ${w.pullDate ? `🔵 Pull: ${formatDate(w.pullDate)}<br>` : ''}
+        ${w.legsDate ? `🟢 Legs: ${formatDate(w.legsDate)}` : ''}
+      </div>` : ''}
+    `;
+    container.appendChild(card);
+  });
+}
+
+function switchTab(tab) {
+  ['push','pull','legs','history','settings'].forEach(t => {
+    document.getElementById(`panel-${t}`).classList.remove('active');
+    document.getElementById(`tab-${t}`).className = 'tab';
+  });
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  document.getElementById(`tab-${tab}`).className = `tab active-${tab}`;
+  if (tab === 'history') renderHistory();
+}
+
+function spawnConfetti() {
+  const container = document.getElementById('confetti');
+  const colors = ['#e63946','#3a86ff','#2dc653','#9b5de5','#ffd166','#fff'];
+  for (let i = 0; i < 60; i++) {
+    const piece = document.createElement('div');
+    piece.className = 'confetti-piece';
+    piece.style.left = Math.random() * 100 + 'vw';
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.animationDelay = Math.random() * 0.8 + 's';
+    piece.style.animationDuration = (1.5 + Math.random()) + 's';
+    container.appendChild(piece);
+    setTimeout(() => piece.remove(), 3000);
+  }
+}
+
+// ===================== SETTINGS =====================
+function saveStartDate() {
+  const val = document.getElementById('startDateInput').value;
+  if (!val) return;
+  localStorage.setItem('startDate', val);
+  document.getElementById('startDateConfirm').textContent = '✓ Saved! Week 1 starts ' + new Date(val).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  viewedWeek = null; // re-sync to the new real current week
+  refreshForViewedWeek();
+}
+
+function saveReminderTime() {
+  const val = document.getElementById('reminderTimeInput').value;
+  if (!val) return;
+  localStorage.setItem('reminderTime', val);
+  const [h, m] = val.split(':');
+  const d = new Date(); d.setHours(parseInt(h)); d.setMinutes(parseInt(m));
+  const friendly = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  document.getElementById('reminderTimeConfirm').textContent = `✓ Saved! You'll be reminded at ${friendly}`;
+  // Reset last reminder so new time can fire today if appropriate
+  localStorage.removeItem('lastReminderDate');
+}
+
+function loadSettings() {
+  const savedDate = localStorage.getItem('startDate');
+  if (savedDate) {
+    document.getElementById('startDateInput').value = savedDate;
+    document.getElementById('startDateConfirm').textContent = '✓ Week 1 starts ' + new Date(savedDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  } else {
+    document.getElementById('startDateInput').value = '2026-06-09';
+  }
+
+  const savedTime = localStorage.getItem('reminderTime');
+  if (savedTime) {
+    document.getElementById('reminderTimeInput').value = savedTime;
+    const [h, m] = savedTime.split(':');
+    const d = new Date(); d.setHours(parseInt(h)); d.setMinutes(parseInt(m));
+    const friendly = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    document.getElementById('reminderTimeConfirm').textContent = `✓ Reminder set for ${friendly}`;
+  } else {
+    document.getElementById('reminderTimeInput').value = '10:00';
+  }
+
+  updateNotifUI();
+}
+
+function updateNotifUI() {
+  const btn = document.getElementById('settingsNotifBtn');
+  const status = document.getElementById('settingsNotifStatus');
+  if (!('Notification' in window)) {
+    btn.style.display = 'none';
+    status.textContent = 'Your browser doesn\'t support notifications.';
+    return;
+  }
+  if (Notification.permission === 'granted') {
+    btn.textContent = '✓ Notifications Enabled';
+    btn.style.background = 'var(--done)';
+    btn.style.color = '#000';
+    status.textContent = 'Reminders are on. They\'ll fire at your chosen time on days you still have workouts left.';
+    status.style.color = 'var(--done)';
+  } else if (Notification.permission === 'denied') {
+    btn.style.display = 'none';
+    status.textContent = '🔕 Blocked — go to your browser settings and allow notifications for this site.';
+  } else {
+    btn.textContent = 'Enable Notifications';
+    status.textContent = 'Tap to allow reminders. Your browser will ask for permission.';
+  }
+}
+
+// ===================== NOTIFICATIONS =====================
+function showNotifStatus(msg, color) {
+  const el = document.getElementById('notifStatus');
+  el.style.display = 'block';
+  el.style.color = color || 'var(--muted)';
+  el.textContent = msg;
+}
+
+function checkNotifBanner() {
+  const banner = document.getElementById('notifBanner');
+  if (!('Notification' in window)) { banner.classList.add('hidden'); return; }
+  if (Notification.permission === 'granted') {
+    banner.classList.add('hidden');
+    showNotifStatus('🔔 Reminders on — change time in ⚙️ Settings', 'var(--done)');
+  } else if (Notification.permission === 'denied') {
+    banner.classList.add('hidden');
+    showNotifStatus('🔕 Notifications blocked — enable in browser settings', 'var(--muted)');
+  }
+}
+
+async function requestNotifications() {
+  if (!('Notification' in window)) {
+    document.getElementById('settingsNotifStatus').textContent = 'Not supported. Try saving to home screen.';
+    return;
+  }
+  const permission = await Notification.requestPermission();
+  if (permission === 'granted') {
+    document.getElementById('notifBanner').classList.add('hidden');
+    showNotifStatus('🔔 Reminders on — change time in ⚙️ Settings', 'var(--done)');
+    scheduleReminderCheck();
+    sendTestNotif();
+  }
+  updateNotifUI();
+}
+
+function sendTestNotif() {
+  if (Notification.permission !== 'granted') {
+    document.getElementById('settingsNotifStatus').textContent = 'Enable notifications first!';
+    return;
+  }
+  new Notification('GRIND TRACKER 💪', {
+    body: 'Test notification — reminders are working!',
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💪</text></svg>'
+  });
+  document.getElementById('settingsNotifStatus').textContent = '✓ Test sent!';
+  setTimeout(() => updateNotifUI(), 2000);
+}
+
+function getReminderMessage() {
+  const weekNum = getWeekNumber();
+  const state = getStateForWeek(weekNum);
+  const missing = [];
+  if (!state.push) missing.push('Push');
+  if (!state.pull) missing.push('Pull');
+  if (!state.legs) missing.push('Legs');
+  if (missing.length === 0) return null;
+  if (missing.length === 3) return { title: 'GRIND TRACKER 💪', body: `Week ${weekNum}: You haven't hit the gym yet. Let's go!` };
+  return { title: 'GRIND TRACKER 💪', body: `Week ${weekNum}: Still need: ${missing.join(', ')}. Don't let the week slip!` };
+}
+
+function shouldFireReminder() {
+  if (Notification.permission !== 'granted') return false;
+  const now = new Date();
+  const targetH = getReminderHour();
+  const targetM = getReminderMinute();
+  const nowH = now.getHours();
+  const nowM = now.getMinutes();
+  // Fire if within 30 min window of target time
+  const nowTotal = nowH * 60 + nowM;
+  const targetTotal = targetH * 60 + targetM;
+  const diff = nowTotal - targetTotal;
+  if (diff < 0 || diff > 30) return false;
+  const lastReminder = localStorage.getItem('lastReminderDate');
+  return lastReminder !== now.toDateString();
+}
+
+function tryFireReminder() {
+  if (!shouldFireReminder()) return;
+  const msg = getReminderMessage();
+  if (!msg) return;
+  localStorage.setItem('lastReminderDate', new Date().toDateString());
+  new Notification(msg.title, {
+    body: msg.body,
+    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">💪</text></svg>'
+  });
+}
+
+function scheduleReminderCheck() {
+  // Check every 5 minutes
+  setInterval(tryFireReminder, 5 * 60 * 1000);
+  // Check on open too
+  setTimeout(tryFireReminder, 3000);
+}
+
+// ===================== INIT =====================
+function init() {
+  viewedWeek = getWeekNumber();
+  renderHeader();
+  renderWeekBanner();
+  renderExercises('push');
+  renderExercises('pull');
+  renderExercises('legs');
+  renderDoneState();
+  switchTab('push');
+  checkNotifBanner();
+  loadSettings();
+  if (Notification.permission === 'granted') scheduleReminderCheck();
+}
+
+init();
+</script>
+</body>
+</html>
